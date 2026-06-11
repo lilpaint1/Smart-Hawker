@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block body %}
+<main class="page-pad col" style="min-height:100dvh;justify-content:space-between">
+  <div></div>
+  <div class="center-text col" style="align-items:center">
+    <div class="center float" style="width:96px;height:96px;border-radius:28px;background:linear-gradient(135deg,#5b8cff,#3b5bf6);box-shadow:0 16px 40px rgba(59,91,246,.4);margin-bottom:1.2rem">
+      <i data-lucide="store" style="color:#fff;width:46px;height:46px"></i>
+    </div>
+    <div class="h1" style="font-size:2rem">{{ app_name }}</div>
+    <div class="muted mt1" style="max-width:300px">หาและจองพื้นที่ขายของง่ายๆ<br>สำหรับพ่อค้าแม่ค้าและเจ้าของตลาด</div>
+
+    <div class="col gap2 mt4 stagger" style="width:100%">
+      {% set feats = [
+        ('search','หาพื้นที่ขายง่าย','ค้นตามจังหวัด ราคา และวัน','#3b5bf6'),
+        ('map','ดูบนแผนที่','เห็นตำแหน่งตลาด กดนำทางได้','#12b886'),
+        ('calendar-check','จองล็อกทันที','เลือกวัน-ล็อก จ่ายมัดจำในแอป','#ff922b')
+      ] %}
+      {% for ic,t,s,c in feats %}
+      <div class="card pad row gap3" style="text-align:left">
+        <div class="center" style="width:48px;height:48px;border-radius:16px;background:{{c}}1a">
+          <i data-lucide="{{ic}}" style="color:{{c}}"></i>
+        </div>
+        <div><div class="bold">{{t}}</div><div class="muted sub">{{s}}</div></div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col gap2 mt4">
+    <a href="/register" class="btn btn-primary btn-block">เริ่มต้นใช้งาน</a>
+    <a href="/login" class="btn btn-ghost btn-block">เข้าสู่ระบบ</a>
+    <a href="/admin/login" class="center muted small" style="gap:.4rem;padding:.5rem">
+      <i data-lucide="shield-check" style="width:15px;height:15px"></i>สำหรับผู้ดูแลระบบ
+    </a>
+    {% include "_quicklogin.html" %}
+  </div>
+</main>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}สมัครสมาชิก{% endblock %}
+{% block body %}
+<div class="topbar"><button class="back" onclick="history.back()"><i data-lucide="chevron-left"></i></button><h1>สมัครสมาชิก</h1></div>
+<main class="page-pad">
+  <div id="step-form">
+    <div class="h2 mb1">สร้างบัญชีใหม่</div>
+    <div class="muted mb3">เลือกประเภทผู้ใช้ของคุณ</div>
+    <div class="grid2 mb3">
+      <button id="role-SELLER" class="card pad col gap1 role-card" style="text-align:left;border:2px solid var(--brand)" onclick="pickRole('SELLER')">
+        <i data-lucide="store"></i><span class="bold">ผู้ขาย</span><span class="muted small">พ่อค้าแม่ค้า</span>
+      </button>
+      <button id="role-MARKET_OWNER" class="card pad col gap1 role-card" style="text-align:left;border:1px solid var(--line)" onclick="pickRole('MARKET_OWNER')">
+        <i data-lucide="building-2"></i><span class="bold">เจ้าของตลาด</span><span class="muted small">ผู้ให้เช่าพื้นที่</span>
+      </button>
+    </div>
+    <label class="label">ชื่อ-นามสกุล</label>
+    <input id="name" class="input mb2" placeholder="เช่น สมหญิง ใจดี">
+    <label class="label">เบอร์โทรศัพท์</label>
+    <input id="phone" class="input mb2" inputmode="numeric" maxlength="10" placeholder="08X-XXX-XXXX">
+    <label class="label">อีเมล (ไม่บังคับ)</label>
+    <input id="email" class="input" type="email" placeholder="you@email.com">
+    <div id="err1" class="small mt2" style="color:var(--danger)"></div>
+    <button class="btn btn-primary btn-block mt3" onclick="submitReg()">สมัครและรับ OTP</button>
+    <div class="center-text muted sub mt4">มีบัญชีแล้ว? <a href="/login" style="color:var(--brand-ink)">เข้าสู่ระบบ</a></div>
+  </div>
+
+  <div id="step-otp" class="hide">
+    <div class="h2 mb1">ยืนยันเบอร์โทร</div>
+    <div class="muted mb3">ส่งรหัส OTP ไปที่ <span id="phone-show" class="bold"></span> แล้ว</div>
+    <div id="devbox" class="card pad mb2 hide" style="background:#ecfdf5;border-color:#a7f3d0">🔑 โหมดทดสอบ: รหัส OTP คือ <b id="devcode"></b></div>
+    <input id="code" class="input otp-input" inputmode="numeric" maxlength="6" placeholder="------">
+    <div id="err2" class="small mt2" style="color:var(--danger)"></div>
+    <button class="btn btn-primary btn-block mt3" onclick="verifyReg()">ยืนยันและเริ่มใช้งาน</button>
+  </div>
+</main>
+{% endblock %}
+{% block script %}<script>
+let role="SELLER";
+function pickRole(r){
+  role=r;
+  for(const x of ["SELLER","MARKET_OWNER"]){
+    $("#role-"+x).style.border = x===r ? "2px solid var(--brand)" : "1px solid var(--line)";
+  }
+}
+async function submitReg(){
+  const name=$("#name").value.trim(), phone=$("#phone").value.replace(/\D/g,''), email=$("#email").value.trim();
+  if(name.length<2){ $("#err1").textContent="กรุณากรอกชื่อ"; return; }
+  if(phone.length!==10){ $("#err1").textContent="เบอร์ต้องเป็น 10 หลัก"; return; }
+  const d=await API.post("/auth/register",{name,phone,email,role});
+  if(!d.ok){ $("#err1").textContent=d.error; return; }
+  $("#phone-show").textContent=phone;
+  if(d.dev){ $("#devcode").textContent=d.dev; $("#devbox").classList.remove("hide"); }
+  $("#step-form").classList.add("hide"); $("#step-otp").classList.remove("hide");
+}
+async function verifyReg(){
+  const phone=$("#phone").value.replace(/\D/g,''), code=$("#code").value.replace(/\D/g,'');
+  const d=await API.post("/auth/otp/verify",{phone,code});
+  if(!d.ok){ $("#err2").textContent=d.error; return; }
+  go(role==="MARKET_OWNER" ? "/owner" : "/search");
+}
+</script>{% endblock %}

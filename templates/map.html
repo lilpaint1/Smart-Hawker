@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}แผนที่{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+{% endblock %}
+{% block body %}
+{% with title='แผนที่ตลาด', subtitle='แตะหมุดเพื่อดูพื้นที่ว่างและนำทาง' %}{% include "_appheader.html" %}{% endwith %}
+<div class="px"><div id="map" class="map-box" style="height:calc(100dvh - 200px)"></div></div>
+{% with active='map' %}{% include "_bottomnav.html" %}{% endwith %}
+{% endblock %}
+{% block script %}<script>
+const map = L.map("map").setView([13.74,100.56], 11);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap"}).addTo(map);
+const pin = L.divIcon({className:"",html:'<div style="font-size:30px">📍</div>',iconSize:[30,30],iconAnchor:[15,30],popupAnchor:[0,-28]});
+
+API.get("/markets").then(d=>{
+  (d.markets||[]).forEach(m=>{
+    L.marker([m.lat,m.lng],{icon:pin}).addTo(map).bindPopup(
+      '<b>'+esc(m.name)+'</b><br><span style="color:#6b7280;font-size:12px">'+esc(m.district||"")+', '+esc(m.province)+'</span>'+
+      '<br><span style="font-size:13px">ว่าง '+m.availableLots+'/'+m.totalLots+' ล็อก · '+(m.minPrice?("เริ่ม ฿"+m.minPrice+"/วัน"):"เต็ม")+'</span>'+
+      '<br><a href="/market/'+m.id+'" style="color:#2540c9;font-weight:600;font-size:13px">ดูรายละเอียด →</a>');
+  });
+});
+</script>{% endblock %}

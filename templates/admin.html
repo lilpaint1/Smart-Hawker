@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}แดชบอร์ดผู้ดูแล{% endblock %}
+{% block body %}
+{% with title='แดชบอร์ดผู้ดูแล', subtitle='ภาพรวมระบบ Smart Hawker' %}{% include "_appheader.html" %}{% endwith %}
+<div class="px" style="text-align:right;margin-top:-.6rem">
+  <button class="sub" style="color:var(--danger);background:none;border:none" onclick="logout()"><i data-lucide="log-out" style="width:14px"></i> ออกจากระบบ</button>
+</div>
+<main class="page-pad" id="content"><div class="muted center-text mt4">กำลังโหลด...</div></main>
+{% endblock %}
+{% block script %}<script>
+async function load(){
+  const d=await API.get("/admin/stats");
+  if(!d.ok){ $("#content").innerHTML='<div class="muted center-text">'+esc(d.error)+'</div>'; return; }
+  const s=d.stats;
+  const cards=[["users","ผู้ขาย",s.sellers,"#3b5bf6"],["building-2","เจ้าของตลาด",s.owners,"#0ea5e9"],
+    ["store","ตลาด",s.markets,"#f59e0b"],["calendar-check","การจอง",s.bookings,"#7950f2"]];
+  let html='<div class="grid2">'+cards.map(c=>
+    '<div class="card pad"><i data-lucide="'+c[0]+'" style="color:'+c[3]+'"></i>'+
+    '<div class="h2 mt2">'+c[2]+'</div><div class="muted sub">'+c[1]+'</div></div>').join("")+'</div>';
+  html+='<div class="card pad row gap3 mt2" style="background:linear-gradient(135deg,#12b886,#059669)">'+
+    '<i data-lucide="wallet" style="color:#fff"></i><div style="color:#fff"><div class="small" style="opacity:.9">รายได้มัดจำรวม</div>'+
+    '<div class="h2" style="color:#fff">฿'+Number(s.revenue).toLocaleString("th-TH")+'</div></div></div>';
+  html+='<button class="btn btn-soft btn-block mt3" onclick="go(\'/admin/users\')"><i data-lucide="users" style="width:18px"></i> จัดการบัญชีผู้ใช้</button>';
+  html+='<div class="title mt4 mb2">การจองล่าสุด</div>'+
+    (d.recent.length?d.recent.map(r=>
+      '<div class="card pad between mt2"><div><div class="bold sub">'+esc(r.seller)+'</div>'+
+      '<div class="muted small">'+esc(r.market)+' · ล็อก '+esc(r.lot)+'</div></div>'+
+      '<div class="center-text"><div class="price">฿'+r.amount+'</div><div class="muted" style="font-size:.7rem">'+esc(r.status)+'</div></div></div>').join("")
+      :'<div class="muted center-text" style="padding:1.5rem">ยังไม่มีการจอง</div>');
+  $("#content").innerHTML=html; icons();
+}
+async function logout(){ await API.post("/auth/logout"); go("/"); }
+load();
+</script>{% endblock %}

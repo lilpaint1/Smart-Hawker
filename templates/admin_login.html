@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}ผู้ดูแลระบบ{% endblock %}
+{% block body %}
+<div class="topbar"><button class="back" onclick="history.back()"><i data-lucide="chevron-left"></i></button><h1>ผู้ดูแลระบบ</h1></div>
+<main class="page-pad center-text col" style="align-items:center">
+  <div class="center" style="width:64px;height:64px;border-radius:18px;background:#11131a;margin:2rem 0 1rem">
+    <i data-lucide="shield-check" style="color:#fff;width:32px;height:32px"></i>
+  </div>
+  <div class="h2">เข้าสู่ระบบผู้ดูแล</div>
+  <div class="muted sub mb3">กรอกรหัสผู้ดูแลระบบเพื่อเข้าใช้งาน</div>
+  <input id="code" class="input center-text" type="password" placeholder="รหัสผู้ดูแล" style="text-align:center" onkeydown="if(event.key==='Enter')submitAdmin()">
+  <div id="err" class="small mt2" style="color:var(--danger)"></div>
+  <button class="btn btn-primary btn-block mt3" onclick="submitAdmin()">เข้าสู่ระบบ</button>
+</main>
+{% endblock %}
+{% block script %}<script>
+async function submitAdmin(){
+  const code=$("#code").value;
+  const d=await API.post("/auth/admin",{code});
+  if(!d.ok){ $("#err").textContent=d.error; return; }
+  go("/admin");
+}
+</script>{% endblock %}

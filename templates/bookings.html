@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}การจอง{% endblock %}
+{% block body %}
+{% with title='การจองของฉัน' %}{% include "_appheader.html" %}{% endwith %}
+<div class="px" id="list"></div>
+{% with active='bookings' %}{% include "_bottomnav.html" %}{% endwith %}
+{% endblock %}
+{% block script %}<script>
+const STAT = {
+  CONFIRMED:["ยืนยันแล้ว","#ecfdf5","#047857"],
+  PENDING:["รอชำระเงิน","#fff7ed","#c2410c"],
+  CANCELLED:["ยกเลิก","#fef2f2","#b91c1c"],
+};
+async function load(){
+  const d=await API.get("/bookings");
+  const list=$("#list"); list.className="px stagger";
+  if(!d.bookings || !d.bookings.length){
+    list.innerHTML='<div class="card pad center-text mt2"><i data-lucide="calendar-check" class="muted"></i>'+
+      '<div class="muted mt1">ยังไม่มีการจอง</div>'+
+      '<button class="btn btn-primary btn-sm mt3" onclick="go(\'/search\')">เริ่มหาพื้นที่ขาย</button></div>';
+    icons(); return;
+  }
+  list.innerHTML = d.bookings.map(b=>{
+    const s=STAT[b.status]||STAT.PENDING;
+    return '<div class="card pad mt2"><div class="between">'+
+      '<div><div class="bold">'+esc(b.marketName)+'</div>'+
+        '<div class="muted sub row gap1" style="margin-top:2px"><i data-lucide="map-pin" style="width:13px"></i>ล็อก '+esc(b.lotCode)+' · '+fmtDate(b.date)+'</div></div>'+
+      '<span class="chip" style="background:'+s[1]+';color:'+s[2]+'">'+s[0]+'</span></div>'+
+      '<div class="between mt2"><span class="muted sub">มัดจำ ฿'+b.depositAmount+'</span>'+
+      (b.status==="PENDING"?'<button class="btn btn-primary btn-sm" onclick="go(\'/checkout/'+b.id+'\')">ชำระเงิน</button>':'')+'</div></div>';
+  }).join("");
+  icons();
+}
+load();
+</script>{% endblock %}

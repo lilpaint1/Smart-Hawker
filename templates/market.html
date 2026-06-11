@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}ตลาด{% endblock %}
+{% block body %}
+<div class="topbar"><button class="back" onclick="history.back()"><i data-lucide="chevron-left"></i></button><h1 id="mname">ตลาด</h1></div>
+<main style="padding-bottom:2rem">
+  <div id="content" class="px"></div>
+</main>
+{% endblock %}
+{% block script %}<script>
+const MID = "{{ market_id }}";
+
+function stars(n,size=15){
+  let h=""; for(let i=1;i<=5;i++){ h+='<i data-lucide="star" style="width:'+size+'px;height:'+size+'px;color:#f59e0b;fill:'+(i<=n?"#f59e0b":"none")+'"></i>'; }
+  return '<span style="display:inline-flex">'+h+'</span>';
+}
+
+async function loadMarket(){
+  const d = await API.get("/markets/"+MID);
+  if(!d.ok){ $("#content").innerHTML='<div class="muted center-text mt4">ไม่พบตลาด</div>'; return; }
+  const m = d.market;
+  $("#mname").textContent = m.name;
+  let lots = m.lots.map(l => {
+    const avail = l.status==="AVAILABLE";
+    return '<div class="card pad between mt2">'+
+      '<div><div class="row gap2"><b style="font-size:1.05rem">ล็อก '+esc(l.code)+'</b>'+
+        '<span class="chip">'+esc(C.RENT_TYPE_LABEL[l.rentType])+'</span></div>'+
+        (l.note?'<div class="muted small mt1">'+esc(l.note)+'</div>':'')+
+        '<div class="price mt1">฿'+l.pricePerDay+'/วัน</div></div>'+
+      (avail
+        ? '<button class="btn btn-primary btn-sm" onclick="go(\'/book/'+l.id+'\')">จอง</button>'
+        : '<span class="chip" style="background:#fef2f2;color:#b91c1c">'+(l.status==="CLOSED"?"ปิด":"จองแล้ว")+'</span>')+
+      '</div>';
+  }).join("");
+
+  $("#content").innerHTML =
+    '<div class="map-box" style="height:140px;display:flex;align-items:flex-end;padding:1rem;background:linear-gradient(135deg,#3b5bf6,#12b886)">'+
+      '<div style="color:#fff"><div class="h2" style="color:#fff">'+esc(m.name)+'</div>'+
+      '<div class="row gap1" style="opacity:.9"><i data-lucide="map-pin" style="width:14px"></i>'+esc(m.district||"")+', '+esc(m.province)+'</div></div></div>'+
+    '<div class="row gap1 mt3 wrap">'+
+      '<span class="chip" style="background:#fff4e6;color:#e8590c"><i data-lucide="flame" style="width:13px"></i>ความนิยม '+m.popularity+'</span>'+
+      '<span class="chip">ว่าง '+m.availableLots+'/'+m.totalLots+' ล็อก</span></div>'+
+    (m.description?'<div class="sub mt2">'+esc(m.description)+'</div>':'')+
+    '<div class="row gap2 mt3">'+
+      '<a class="btn btn-ghost flex1" target="_blank" href="https://www.google.com/maps/dir/?api=1&destination='+m.lat+','+m.lng+'"><i data-lucide="navigation"></i>นำทาง</a>'+
+      '<button class="btn btn-ghost flex1" onclick="go(\'/chat/'+m.ownerId+'\')"><i data-lucide="message-circle"></i>แชทเจ้าของ</button></div>'+
+    '<div class="title mt4 mb2">ล็อกขายของ</div>'+ lots +
+    '<div id="reviews" class="mt4"></div>';
+  icons();
+  loadReviews();
+}
+
+async function loadReviews(){
+  const d = await API.get("/reviews?targetType=MARKET&targetId="+MID);
+  const avg = d.average ? d.average.toFixed(1) : "—";
+  let items = (d.reviews||[]).map(r =>
+    '<div class="card pad mt2"><div class="between"><b class="sub">'+esc(r.fromName)+'</b>'+stars(r.rating,13)+'</div>'+
+    (r.comment?'<div class="sub mt1">'+esc(r.comment)+'</div>':'')+'</div>').join("");
+  $("#reviews").innerHTML =
+    '<div class="between mb2"><div class="title">รีวิว</div>'+
+      '<button class="sub" style="color:var(--brand-ink);background:none;border:none" onclick="toggleForm()">เขียนรีวิว</button></div>'+
+    '<div class="row gap2"><div class="h1">'+avg+'</div><div>'+stars(Math.round(d.average||0))+'<div class="muted small">'+(d.count||0)+' รีวิว</div></div></div>'+
+    '<div id="rform" class="card pad mt2 hide">'+
+      '<div class="label">ให้คะแนน</div><div id="rstars" class="row gap1 mb2"></div>'+
+      '<textarea id="rcomment" class="input" rows="2" placeholder="เล่าประสบการณ์..."></textarea>'+
+      '<button class="btn btn-primary btn-block mt2" onclick="submitReview()">ส่งรีวิว</button></div>'+
+    items;
+  buildRatingStars();
+  icons();
+}
+
+let rating=5;
+function buildRatingStars(){
+  const c=$("#rstars"); if(!c) return; c.innerHTML="";
+  for(let i=1;i<=5;i++){ const b=el("button",null,'<i data-lucide="star" style="width:26px;height:26px;color:#f59e0b;fill:'+(i<=rating?"#f59e0b":"none")+'"></i>');
+    b.style.background="none"; b.style.border="none"; b.onclick=()=>{rating=i;buildRatingStars();}; c.appendChild(b); }
+  icons();
+}
+function toggleForm(){ $("#rform").classList.toggle("hide"); }
+async function submitReview(){
+  await API.post("/reviews",{targetType:"MARKET",targetId:MID,rating,comment:$("#rcomment").value.trim()});
+  loadReviews();
+}
+loadMarket();
+</script>{% endblock %}

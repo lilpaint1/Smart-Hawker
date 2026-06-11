@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}ตลาดของฉัน{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+{% endblock %}
+{% block body %}
+{% with title='ตลาดของฉัน', subtitle='จัดการพื้นที่และล็อกขายของ' %}{% include "_appheader.html" %}{% endwith %}
+<div class="px" style="text-align:right;margin-top:-.6rem">
+  <button class="sub" style="color:var(--danger);background:none;border:none" onclick="logout()"><i data-lucide="log-out" style="width:14px"></i> ออกจากระบบ</button>
+</div>
+<main class="page">
+  <button class="btn btn-primary btn-block mt2" onclick="toggleMarketForm()"><i data-lucide="plus"></i> เพิ่มตลาด/พื้นที่ใหม่</button>
+
+  <div id="market-form" class="card pad mt2 hide scalein">
+    <input id="m-name" class="input mb2" placeholder="ชื่อตลาด">
+    <label class="label" style="margin-top:.3rem">📍 ปักหมุดตำแหน่งตลาดบนแผนที่</label>
+    <div class="row gap2 mb2">
+      <div class="card row gap1 flex1" style="padding:.6rem .8rem"><i data-lucide="search" class="muted" style="width:17px"></i>
+        <input id="m-search" placeholder="ค้นหาที่อยู่/ชื่อตลาด" style="border:none;outline:none;flex:1;background:none" onkeydown="if(event.key==='Enter'){event.preventDefault();searchPlace()}"></div>
+      <button class="btn btn-soft btn-sm" onclick="searchPlace()">ค้นหา</button>
+    </div>
+    <div id="pick-map" class="map-box" style="height:200px"></div>
+    <div class="between mt1">
+      <button class="sub" style="color:var(--brand-ink);background:none;border:none" onclick="useMyLoc()"><i data-lucide="locate-fixed" style="width:15px"></i> ใช้ตำแหน่งปัจจุบัน</button>
+      <span id="pin-status" class="muted small">แตะบนแผนที่เพื่อปักหมุด</span>
+    </div>
+    <div class="row gap2 mt2">
+      <input id="m-prov" class="input" placeholder="จังหวัด (เติมอัตโนมัติ)">
+      <input id="m-dist" class="input" placeholder="เขต/อำเภอ">
+    </div>
+    <textarea id="m-desc" class="input mt2" rows="2" placeholder="รายละเอียด (ไม่บังคับ)"></textarea>
+    <button id="m-save" class="btn btn-primary btn-block mt2" onclick="addMarket()">กรุณาปักหมุดบนแผนที่</button>
+  </div>
+
+  <div id="markets" class="mt3"></div>
+</main>
+{% endblock %}
+{% block script %}<script>
+let pickMap=null, pinMarker=null, pin={lat:null,lng:null};
+const pinIcon=L.divIcon({className:"",html:'<div style="font-size:32px">📍</div>',iconSize:[32,32],iconAnchor:[16,32]});
+
+function toggleMarketForm(){
+  const f=$("#market-form"); f.classList.toggle("hide");
+  if(!f.classList.contains("hide")) setTimeout(initPickMap, 60);
+}
+function initPickMap(){
+  if(pickMap){ pickMap.invalidateSize(); return; }
+  pickMap=L.map("pick-map").setView([13.7466,100.5347],11);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OSM"}).addTo(pickMap);
+  pickMap.on("click", e=> setPin(e.latlng.lat, e.latlng.lng));
+  pickMap.invalidateSize();
+}
+async function setPin(lat,lng,recenter){
+  pin={lat,lng};
+  if(pinMarker) pinMarker.setLatLng([lat,lng]); else pinMarker=L.marker([lat,lng],{icon:pinIcon}).addTo(pickMap);
+  if(recenter) pickMap.setView([lat,lng],15);
+  $("#pin-status").textContent="ปักหมุดแล้ว ✓";
+  $("#m-save").textContent="บันทึกตลาด";
+  // reverse geocode เติมจังหวัด/เขต
+  try{
+    const r=await fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat="+lat+"&lon="+lng+"&accept-language=th").then(x=>x.json());
+    const a=r.address||{};
+    if(!$("#m-prov").value) $("#m-prov").value = a.province||a.state||a.city||"";
+    if(!$("#m-dist").value) $("#m-dist").value = a.city_district||a.suburb||a.county||a.district||a.town||a.quarter||"";
+  }catch(e){}
+}
+async function searchPlace(){
+  const q=$("#m-search").value.trim(); if(!q) return;
+  const arr=await fetch("https://nominatim.openstreetmap.org/search?format=json&countrycodes=th&limit=1&accept-language=th&q="+encodeURIComponent(q)).then(x=>x.json());
+  if(arr[0]) setPin(parseFloat(arr[0].lat),parseFloat(arr[0].lon),true);
+}
+function useMyLoc(){ navigator.geolocation && navigator.geolocation.getCurrentPosition(p=>setPin(p.coords.latitude,p.coords.longitude,true)); }
+
+async function addMarket(){
+  if(pin.lat==null){ alert("กรุณาปักหมุดบนแผนที่"); return; }
+  const body={name:$("#m-name").value.trim(),province:$("#m-prov").value.trim(),
+    district:$("#m-dist").value.trim(),lat:pin.lat,lng:pin.lng,description:$("#m-desc").value.trim()};
+  const d=await API.post("/markets",body);
+  if(!d.ok){ alert(d.error); return; }
+  $("#m-name").value=$("#m-desc").value=""; $("#market-form").classList.add("hide"); load();
+}
+
+async function load(){
+  const d=await API.get("/owner/markets");
+  const wrap=$("#markets"); wrap.className="stagger";
+  if(!d.markets || !d.markets.length){
+    wrap.innerHTML='<div class="card pad center-text"><i data-lucide="store" class="muted"></i><div class="muted mt1">ยังไม่มีตลาด เพิ่มตลาดแรกของคุณ</div></div>'; icons(); return;
+  }
+  wrap.innerHTML=d.markets.map(m=>{
+    const lots=m.lots.map(l=>{
+      const booked=l.status==="BOOKED", closed=l.status==="CLOSED";
+      return '<div class="between" style="padding:.4rem .5rem;border-radius:12px;background:#f7f8fc;margin-top:.35rem">'+
+        '<div class="row gap2"><b class="sub">'+esc(l.code)+'</b><span class="muted small">฿'+l.pricePerDay+' · '+esc(C.RENT_TYPE_LABEL[l.rentType])+'</span>'+
+        (booked?'<span class="chip" style="padding:2px 8px;background:#ffe3e3;color:#c92a2a">จองแล้ว</span>':'')+
+        (closed?'<span class="chip" style="padding:2px 8px">ปิด</span>':'')+'</div>'+
+        '<div class="row gap1">'+
+        (!booked?'<button class="iconbtn" style="background:none;border:none;color:'+(closed?"var(--ink-soft)":"var(--accent-ink)")+'" onclick="toggleLot(\''+l.id+'\')"><i data-lucide="power" style="width:16px"></i></button>':'')+
+        '<button class="iconbtn" style="background:none;border:none;color:var(--danger)" onclick="delLot(\''+l.id+'\')"><i data-lucide="trash-2" style="width:16px"></i></button></div></div>';
+    }).join("");
+    return '<div class="card pad mt2">'+
+      '<div class="between"><div><div class="title">'+esc(m.name)+'</div><div class="muted sub">'+esc(m.district||"")+', '+esc(m.province)+'</div></div>'+
+      '<button style="background:none;border:none;color:var(--danger)" onclick="delMarket(\''+m.id+'\')"><i data-lucide="trash-2"></i></button></div>'+
+      '<div class="row gap1 mt2 wrap"><span class="chip">ล็อก '+m.totalLots+'</span>'+
+      '<span class="chip" style="background:#e6fcf5;color:#0c916b">ว่าง '+m.availableLots+'</span>'+
+      '<span class="chip" style="background:#eaefff;color:#2540c9">จองแล้ว '+m.bookings+'</span></div>'+
+      lots +
+      '<div id="af-'+m.id+'" class="card pad hide" style="background:#f7f8fc;margin-top:.6rem">'+
+        '<div class="row gap2"><input id="lc-'+m.id+'" class="input" placeholder="เลขล็อก A1"><input id="lp-'+m.id+'" class="input" inputmode="numeric" placeholder="ราคา/วัน"></div>'+
+        '<select id="lr-'+m.id+'" class="input mt2"><option value="DAILY">รายวัน</option><option value="WEEKLY">รายสัปดาห์</option><option value="MONTHLY">รายเดือน</option></select>'+
+        '<button class="btn btn-primary btn-block mt2" onclick="addLot(\''+m.id+'\')">เพิ่มล็อก</button></div>'+
+      '<button class="btn btn-soft btn-block mt2" onclick="document.getElementById(\'af-'+m.id+'\').classList.toggle(\'hide\')"><i data-lucide="plus" style="width:16px"></i> เพิ่มล็อก</button>'+
+      '</div>';
+  }).join("");
+  icons();
+}
+async function toggleLot(id){ await API.patch("/lots/"+id); load(); }
+async function delLot(id){ if(confirm("ลบล็อกนี้?")){ await API.del("/lots/"+id); load(); } }
+async function delMarket(id){ if(confirm("ลบตลาดนี้ทั้งหมด? ล็อก/การจองทั้งหมดจะถูกลบ")){ await API.del("/markets/"+id); load(); } }
+async function addLot(mid){
+  const d=await API.post("/lots",{marketId:mid,code:$("#lc-"+mid).value.trim(),pricePerDay:parseFloat($("#lp-"+mid).value),rentType:$("#lr-"+mid).value});
+  if(!d.ok){ alert(d.error); return; } load();
+}
+async function logout(){ await API.post("/auth/logout"); go("/"); }
+load();
+</script>{% endblock %}

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" content="#3b5bf6">
+  <title>{% block title %}{{ app_name }}{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <div class="app-frame">
+    {% block body %}{% endblock %}
+  </div>
+
+  <script>
+    // ค่ากลางจาก server -> ให้ JS ใช้ค่าเดียวกัน (กัน mismatch)
+    window.CONFIG = {{ client_config|tojson }};
+    window.ME = {% if me %}{ "id": {{ me.id|tojson }}, "role": {{ me.role|tojson }}, "name": {{ me.name|tojson }} }{% elif session_role %}{ "id": null, "role": {{ session_role|tojson }}, "name": null }{% else %}null{% endif %};
+    window.ENABLE_QUICK_LOGIN = {{ 'true' if enable_quick_login else 'false' }};
+  </script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block script %}{% endblock %}
+</body>
+</html>

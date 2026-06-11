@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}ค้นหา{% endblock %}
+{% block body %}
+{% with title='หาพื้นที่ขาย', subtitle='เลือกตลาดที่มีล็อกว่างสำหรับคุณ' %}{% include "_appheader.html" %}{% endwith %}
+<div class="px" style="position:sticky;top:0;z-index:20;background:var(--bg);padding-top:.4rem;padding-bottom:.7rem">
+  <div class="card row gap2" style="padding:.75rem 1rem">
+    <i data-lucide="search" class="muted"></i>
+    <input id="q" placeholder="ค้นหาชื่อตลาด..." style="border:none;outline:none;flex:1;font-size:1rem;background:none">
+  </div>
+  <div class="row gap1 mt2 hide-scroll" id="prov-chips"></div>
+  <div class="row gap1 mt1 hide-scroll" id="rent-chips"></div>
+  <div class="row gap1 mt1 hide-scroll" id="price-chips"></div>
+</div>
+<div class="px" id="list"></div>
+{% with active='search' %}{% include "_bottomnav.html" %}{% endwith %}
+{% endblock %}
+
+{% block script %}<script>
+const state = { q:"", province:"", rentType:"", maxPrice:0 };
+
+function makeChips(containerId, opts, onPick, activeIdx=0){
+  const c = $("#"+containerId);
+  opts.forEach((o, i) => {
+    const b = el("button", "chip" + (i===activeIdx ? " chip-active" : ""), o.label);
+    b.onclick = () => {
+      [...c.children].forEach(x => x.classList.remove("chip-active"));
+      b.classList.add("chip-active");
+      onPick(o.value); load();
+    };
+    c.appendChild(b);
+  });
+}
+
+function skel(){
+  $("#list").innerHTML = "";
+  for(let i=0;i<3;i++){
+    $("#list").appendChild(el("div","card pad row gap3 mt2",
+      '<div class="skeleton" style="width:52px;height:52px;border-radius:16px"></div>'+
+      '<div class="flex1 col gap2"><div class="skeleton" style="height:16px;width:60%"></div>'+
+      '<div class="skeleton" style="height:12px;width:40%"></div></div>'));
+  }
+}
+
+async function load(){
+  skel();
+  const p = new URLSearchParams();
+  if(state.q) p.set("q", state.q);
+  if(state.province) p.set("province", state.province);
+  if(state.rentType) p.set("rentType", state.rentType);
+  if(state.maxPrice) p.set("maxPrice", state.maxPrice);
+  const d = await API.get("/markets?" + p.toString());
+  const list = $("#list"); list.innerHTML = ""; list.className = "px stagger";
+  if(!d.markets || !d.markets.length){
+    list.appendChild(el("div","card pad center-text mt2",
+      '<i data-lucide="store" class="muted"></i><div class="muted mt1">ไม่พบตลาดตามเงื่อนไข</div>'));
+    icons(); return;
+  }
+  d.markets.forEach((m,i) => {
+    const initial = (m.name||"ต").replace("ตลาด","").trim().charAt(0) || "ต";
+    const card = el("div","card card-press pad mt2");
+    card.style.cursor="pointer";
+    card.onclick = () => go("/market/"+m.id);
+    card.innerHTML =
+      '<div class="row gap3">'+
+        '<div class="avatar" style="width:52px;height:52px;font-size:20px;background:'+avaColor(i)+'">'+esc(initial)+'</div>'+
+        '<div class="flex1"><div class="title truncate">'+esc(m.name)+'</div>'+
+          '<div class="muted sub row gap1" style="margin-top:2px"><i data-lucide="map-pin" style="width:13px;height:13px"></i>'+esc(m.district||"")+', '+esc(m.province)+'</div></div>'+
+        '<span class="chip" style="background:#fff4e6;color:#e8590c"><i data-lucide="flame" style="width:13px;height:13px"></i>'+m.popularity+'</span>'+
+      '</div>'+
+      '<div class="between" style="margin-top:.7rem;padding-top:.7rem;border-top:1px solid var(--line)">'+
+        '<span class="muted sub">ว่าง <b style="color:'+(m.availableLots?'var(--accent-ink)':'var(--danger)')+'">'+m.availableLots+'</b>/'+m.totalLots+' ล็อก</span>'+
+        '<span class="price">'+(m.minPrice?("เริ่ม ฿"+m.minPrice+"/วัน"):"เต็ม")+'</span>'+
+      '</div>';
+    list.appendChild(card);
+  });
+  icons();
+}
+
+// chips
+makeChips("prov-chips",[{label:"ทั้งหมด",value:""},{label:"กรุงเทพมหานคร",value:"กรุงเทพมหานคร"},{label:"นนทบุรี",value:"นนทบุรี"}],
+  v=>state.province=v);
+makeChips("rent-chips",[{label:"ทุกประเภท",value:""},{label:C.RENT_TYPE_LABEL.DAILY,value:"DAILY"},{label:C.RENT_TYPE_LABEL.WEEKLY,value:"WEEKLY"},{label:C.RENT_TYPE_LABEL.MONTHLY,value:"MONTHLY"}],
+  v=>state.rentType=v);
+makeChips("price-chips",[{label:"ทุกราคา",value:0},{label:"≤ 150",value:150},{label:"≤ 250",value:250},{label:"≤ 400",value:400}],
+  v=>state.maxPrice=v);
+
+let t; $("#q").addEventListener("input", e=>{ state.q=e.target.value; clearTimeout(t); t=setTimeout(load,250); });
+load(); icons();
+</script>{% endblock %}

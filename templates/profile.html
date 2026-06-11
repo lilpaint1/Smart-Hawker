@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}โปรไฟล์{% endblock %}
+{% block body %}
+<main class="page" id="content"><div class="muted center-text mt5">กำลังโหลด...</div></main>
+{% with active='profile' %}{% include "_bottomnav.html" %}{% endwith %}
+{% endblock %}
+{% block script %}<script>
+let user=null;
+function field(k,v){ return '<div style="padding:.4rem 0"><div class="muted small">'+k+'</div><div class="sub">'+esc(v||"—")+'</div></div>'; }
+
+async function load(){
+  const d=await API.get("/me");
+  user=d.user;
+  if(!user){ go("/login"); return; }
+  const seller = user.role==="SELLER";
+  let body =
+    '<div class="col center-text mt4" style="align-items:center">'+
+      '<div class="avatar" style="width:80px;height:80px;background:var(--brand)"><i data-lucide="'+(seller?"store":"building-2")+'" style="width:36px;height:36px"></i></div>'+
+      '<div class="h2 mt2">'+esc(user.name)+'</div>'+
+      '<span class="chip mt1">'+esc(C.ROLE_LABEL[user.role])+'</span>'+
+      '<div class="muted sub row gap1 mt2"><i data-lucide="phone" style="width:13px"></i>'+esc(user.phone)+'</div>'+
+    '</div>';
+  if(seller){
+    body += '<div class="between mt4 mb2"><div class="title">ข้อมูลร้าน</div>'+
+      '<button id="editbtn" class="sub" style="color:var(--brand-ink);background:none;border:none" onclick="edit()">แก้ไข</button></div>'+
+      '<div id="shopview" class="card pad">'+field("ชื่อร้าน",user.shopName)+field("ประเภทสินค้า",user.productType)+field("เกี่ยวกับร้าน",user.bio)+'</div>'+
+      '<div id="shopedit" class="card pad hide"><div class="col gap2">'+
+        '<div><div class="label">ชื่อร้าน</div><input id="f-shop" class="input" value="'+esc(user.shopName||"")+'"></div>'+
+        '<div><div class="label">ประเภทสินค้า</div><input id="f-type" class="input" value="'+esc(user.productType||"")+'"></div>'+
+        '<div><div class="label">เกี่ยวกับร้าน</div><textarea id="f-bio" class="input" rows="3">'+esc(user.bio||"")+'</textarea></div>'+
+        '<button class="btn btn-primary" onclick="save()"><i data-lucide="save" style="width:16px"></i> บันทึก</button></div></div>';
+  }
+  body += '<button class="btn btn-danger btn-block mt4" onclick="logout()"><i data-lucide="log-out" style="width:17px"></i> ออกจากระบบ</button>';
+  $("#content").innerHTML=body; icons();
+}
+function edit(){ $("#shopview").classList.add("hide"); $("#shopedit").classList.remove("hide"); $("#editbtn").classList.add("hide"); }
+async function save(){
+  const d=await API.post("/profile",{shopName:$("#f-shop").value,productType:$("#f-type").value,bio:$("#f-bio").value});
+  if(d.ok) load();
+}
+async function logout(){ await API.post("/auth/logout"); go("/"); }
+load();
+</script>{% endblock %}

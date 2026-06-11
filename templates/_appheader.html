@@ -1,0 +1,11 @@
+{# หัวเรื่อง + กระดิ่งแจ้งเตือน (badge แดง) — ส่ง title / subtitle #}
+<div class="app-header">
+  <div>
+    <div class="h1">{{ title }}</div>
+    {% if subtitle %}<div class="muted sub mt1">{{ subtitle }}</div>{% endif %}
+  </div>
+  <a href="/notifications" class="bell card card-press" aria-label="การแจ้งเตือน">
+    <i data-lucide="bell"></i>
+    <span id="bell-badge" class="badge-dot hide"></span>
+  </a>
+</div>

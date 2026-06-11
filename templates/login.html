@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}เข้าสู่ระบบ{% endblock %}
+{% block body %}
+<div class="topbar"><button class="back" onclick="history.back()"><i data-lucide="chevron-left"></i></button><h1>เข้าสู่ระบบ</h1></div>
+<main class="page-pad">
+  <div id="step-phone">
+    <div class="h2 mb1">ยินดีต้อนรับกลับ 👋</div>
+    <div class="muted mb3">กรอกเบอร์โทรเพื่อรับรหัส OTP</div>
+    <label class="label">เบอร์โทรศัพท์</label>
+    <input id="phone" class="input" inputmode="numeric" maxlength="10" placeholder="08X-XXX-XXXX">
+    <div id="err1" class="small mt2" style="color:var(--danger)"></div>
+    <button class="btn btn-primary btn-block mt3" onclick="requestOtp()">ขอรหัส OTP</button>
+    <div class="center-text muted sub mt4">ยังไม่มีบัญชี? <a href="/register" style="color:var(--brand-ink)">สมัครสมาชิก</a></div>
+    {% include "_quicklogin.html" %}
+  </div>
+
+  <div id="step-otp" class="hide">
+    <div class="h2 mb1">กรอกรหัส OTP</div>
+    <div class="muted mb3">ส่งรหัสไปที่ <span id="phone-show" class="bold"></span> แล้ว</div>
+    <div id="devbox" class="card pad mb2 hide" style="background:#ecfdf5;border-color:#a7f3d0">
+      🔑 โหมดทดสอบ: รหัส OTP คือ <b id="devcode"></b>
+    </div>
+    <input id="code" class="input otp-input" inputmode="numeric" maxlength="6" placeholder="------">
+    <div id="err2" class="small mt2" style="color:var(--danger)"></div>
+    <button class="btn btn-primary btn-block mt3" onclick="verifyOtp()">ยืนยัน</button>
+    <button class="btn btn-block mt2" style="background:none;box-shadow:none" onclick="backToPhone()">เปลี่ยนเบอร์โทร</button>
+  </div>
+</main>
+{% endblock %}
+{% block script %}<script>
+async function requestOtp(){
+  const phone = $("#phone").value.replace(/\D/g,'');
+  if(phone.length!==10){ $("#err1").textContent="เบอร์ต้องเป็นตัวเลข 10 หลัก"; return; }
+  const d = await API.post("/auth/otp/request",{phone});
+  if(!d.ok){ $("#err1").textContent=d.error; return; }
+  $("#phone-show").textContent=phone;
+  if(d.dev){ $("#devcode").textContent=d.dev; $("#devbox").classList.remove("hide"); }
+  $("#step-phone").classList.add("hide"); $("#step-otp").classList.remove("hide");
+}
+async function verifyOtp(){
+  const phone=$("#phone").value.replace(/\D/g,''); const code=$("#code").value.replace(/\D/g,'');
+  const d = await API.post("/auth/otp/verify",{phone,code});
+  if(!d.ok){ $("#err2").textContent=d.error; return; }
+  go(qs("next")||"/search");
+}
+function backToPhone(){ $("#step-otp").classList.add("hide"); $("#step-phone").classList.remove("hide"); }
+</script>{% endblock %}

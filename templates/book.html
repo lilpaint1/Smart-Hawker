@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}จองล็อก{% endblock %}
+{% block body %}
+<div class="topbar"><button class="back" onclick="history.back()"><i data-lucide="chevron-left"></i></button><h1>จองล็อก</h1></div>
+<main class="px" id="content"></main>
+{% endblock %}
+{% block script %}<script>
+const LOT_ID = "{{ lot_id }}";
+let lot=null;
+const today = new Date().toISOString().slice(0,10);
+
+async function load(){
+  const d = await API.get("/lots/"+LOT_ID);
+  if(!d.ok){ $("#content").innerHTML='<div class="muted center-text mt4">ไม่พบล็อก</div>'; return; }
+  lot=d.lot;
+  $("#content").innerHTML =
+    '<div class="card pad mt2"><div class="muted sub row gap1"><i data-lucide="map-pin" style="width:14px"></i>'+esc(lot.marketName)+'</div>'+
+      '<div class="row gap2" style="margin-top:4px"><span class="h2">ล็อก '+esc(lot.code)+'</span>'+
+      '<span class="chip">'+esc(C.RENT_TYPE_LABEL[lot.rentType])+'</span></div>'+
+      '<div class="price mt1">฿'+lot.pricePerDay+'/วัน</div></div>'+
+    '<label class="label mt4"><i data-lucide="calendar-days" style="width:15px"></i> เลือกวันที่ต้องการขาย</label>'+
+    '<input id="date" type="date" class="input" min="'+today+'" value="'+today+'">'+
+    '<div class="card pad mt3"><div class="between sub"><span class="muted">ค่าเช่า/วัน</span><span>฿'+lot.pricePerDay+'</span></div>'+
+      '<div class="between mt2" style="padding-top:.6rem;border-top:1px solid var(--line);font-weight:700">'+
+      '<span>มัดจำที่ต้องชำระ (20%)</span><span class="price">฿'+lot.deposit+'</span></div></div>'+
+    '<div id="err" class="small mt2" style="color:var(--danger)"></div>'+
+    '<button class="btn btn-primary btn-block mt3" onclick="confirmBook()">ยืนยันการจอง</button>';
+  icons();
+}
+async function confirmBook(){
+  const date=$("#date").value;
+  const d=await API.post("/bookings",{lotId:LOT_ID,date});
+  if(!d.ok){ $("#err").textContent=d.error; return; }
+  go("/checkout/"+d.bookingId);
+}
+load();
+</script>{% endblock %}

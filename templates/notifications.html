@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}แจ้งเตือน{% endblock %}
+{% block body %}
+<div class="topbar"><button class="back" onclick="history.back()"><i data-lucide="chevron-left"></i></button><h1>การแจ้งเตือน</h1></div>
+<main class="px" id="list"></main>
+{% endblock %}
+{% block script %}<script>
+const ICON={BOOKING_CONFIRMED:["check-circle-2","var(--accent)"],MESSAGE:["message-circle","#0ea5e9"],PROMO:["tag","#f59e0b"]};
+async function load(){
+  const d=await API.get("/notifications");
+  await API.post("/notifications"); // mark read
+  const list=$("#list"); list.className="px stagger";
+  if(!d.notifications || !d.notifications.length){
+    list.innerHTML='<div class="card pad center-text mt3"><i data-lucide="bell" class="muted"></i><div class="muted mt1">ยังไม่มีการแจ้งเตือน</div></div>';
+    icons(); return;
+  }
+  list.innerHTML=d.notifications.map(n=>{
+    const ic=ICON[n.type]||["bell","var(--ink-soft)"];
+    return '<div class="card pad row gap3 mt2" style="align-items:flex-start">'+
+      '<i data-lucide="'+ic[0]+'" style="color:'+ic[1]+';margin-top:2px"></i>'+
+      '<div class="flex1"><div class="bold sub">'+esc(n.title)+'</div>'+
+      '<div class="muted sub">'+esc(n.body)+'</div>'+
+      '<div class="muted" style="font-size:.7rem;margin-top:2px">'+new Date(n.createdAt).toLocaleString("th-TH")+'</div></div></div>';
+  }).join("");
+  icons();
+}
+load();
+</script>{% endblock %}

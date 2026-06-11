@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}จัดการบัญชี{% endblock %}
+{% block body %}
+<div class="topbar"><button class="back" onclick="go('/admin')"><i data-lucide="chevron-left"></i></button><h1>จัดการบัญชีผู้ใช้</h1></div>
+<main class="page-pad">
+  <button class="btn btn-primary btn-block" onclick="toggleForm()"><i data-lucide="plus"></i> เพิ่มบัญชีผู้ใช้</button>
+  <div id="form" class="card pad mt2 hide scalein">
+    <input id="f-name" class="input mb2" placeholder="ชื่อ">
+    <input id="f-phone" class="input mb2" inputmode="numeric" maxlength="10" placeholder="เบอร์โทร 10 หลัก">
+    <div class="row gap2">
+      <button id="r-SELLER" class="chip flex1 chip-active" style="justify-content:center;padding:.7rem" onclick="pickRole('SELLER')">ผู้ขาย</button>
+      <button id="r-MARKET_OWNER" class="chip flex1" style="justify-content:center;padding:.7rem" onclick="pickRole('MARKET_OWNER')">เจ้าของตลาด</button>
+    </div>
+    <div id="err" class="small mt2" style="color:var(--danger)"></div>
+    <button class="btn btn-primary btn-block mt2" onclick="addUser()">สร้างบัญชี</button>
+  </div>
+  <div id="count" class="muted sub mt3 mb2"></div>
+  <div id="list"></div>
+</main>
+{% endblock %}
+{% block script %}<script>
+let role="SELLER";
+function pickRole(r){ role=r; $("#r-SELLER").classList.toggle("chip-active",r==="SELLER"); $("#r-MARKET_OWNER").classList.toggle("chip-active",r==="MARKET_OWNER"); }
+function toggleForm(){ $("#form").classList.toggle("hide"); }
+async function load(){
+  const d=await API.get("/admin/users");
+  $("#count").textContent="ทั้งหมด "+(d.users?d.users.length:0)+" บัญชี";
+  const list=$("#list"); list.className="stagger";
+  list.innerHTML=(d.users||[]).map(u=>
+    '<div class="card pad row gap3 mt2"><div class="avatar" style="width:44px;height:44px;background:'+(u.role==="MARKET_OWNER"?"#12b886":"#3b5bf6")+'">'+
+    '<i data-lucide="'+(u.role==="MARKET_OWNER"?"building-2":"store")+'" style="width:20px"></i></div>'+
+    '<div class="flex1"><div class="bold truncate">'+esc(u.name)+'</div>'+
+    '<div class="muted small">'+esc(u.phone)+' · '+esc(C.ROLE_LABEL[u.role])+'</div>'+
+    '<div class="muted" style="font-size:.7rem">ตลาด '+u.markets+' · จอง '+u.bookings+'</div></div>'+
+    '<button style="background:none;border:none;color:var(--danger)" onclick="delUser(\''+u.id+'\',\''+esc(u.name)+'\')"><i data-lucide="trash-2"></i></button></div>').join("");
+  icons();
+}
+async function addUser(){
+  const name=$("#f-name").value.trim(), phone=$("#f-phone").value.replace(/\D/g,'');
+  const d=await API.post("/admin/users",{name,phone,role});
+  if(!d.ok){ $("#err").textContent=d.error; return; }
+  $("#f-name").value=$("#f-phone").value=""; $("#form").classList.add("hide"); load();
+}
+async function delUser(id,name){ if(confirm('ลบบัญชี "'+name+'" และข้อมูลทั้งหมด?')){ await API.del("/admin/users/"+id); load(); } }
+load();
+</script>{% endblock %}

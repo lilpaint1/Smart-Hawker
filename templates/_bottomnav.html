@@ -1,0 +1,8 @@
+{# แท็บล่าง — ตั้ง {% set active = 'search' %} ก่อน include #}
+<nav class="bottomnav">
+  <a href="/search" class="{{ 'active' if active=='search' }}"><i data-lucide="search"></i>ค้นหา</a>
+  <a href="/map" class="{{ 'active' if active=='map' }}"><i data-lucide="map"></i>แผนที่</a>
+  <a href="/bookings" class="{{ 'active' if active=='bookings' }}"><i data-lucide="calendar-check"></i>การจอง</a>
+  <a href="/chat" class="{{ 'active' if active=='chat' }}"><i data-lucide="message-circle"></i>แชท</a>
+  <a href="/profile" class="{{ 'active' if active=='profile' }}"><i data-lucide="user"></i>โปรไฟล์</a>
+</nav>

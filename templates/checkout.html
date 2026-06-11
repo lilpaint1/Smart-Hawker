@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}ชำระมัดจำ{% endblock %}
+{% block body %}
+<div class="topbar"><button class="back" onclick="history.back()"><i data-lucide="chevron-left"></i></button><h1>ชำระมัดจำ</h1></div>
+<main class="px col" style="align-items:center" id="content">
+  <div class="muted mt4">กำลังโหลด...</div>
+</main>
+{% endblock %}
+{% block script %}<script>
+const BID = "{{ booking_id }}";
+async function load(){
+  const d = await API.get("/bookings/"+BID);
+  if(!d.ok){ $("#content").innerHTML='<div class="muted mt4">ไม่พบการจอง</div>'; return; }
+  const b=d.booking;
+  $("#content").innerHTML =
+    '<div class="muted sub center-text mt2">'+esc(b.marketName)+' · ล็อก '+esc(b.lotCode)+'</div>'+
+    '<div class="h1 mt2" style="color:var(--accent-ink)">฿'+b.depositAmount+'</div>'+
+    '<div class="muted sub mb3">สแกนเพื่อชำระผ่าน PromptPay</div>'+
+    '<div class="card pad center col" style="align-items:center">'+
+      '<img src="/api/payments/'+BID+'/qr.png" width="230" height="230" alt="PromptPay QR" style="border-radius:8px">'+
+      '<div class="bold mt2">PromptPay</div></div>'+
+    '<div class="row gap1 muted small mt3"><i data-lucide="shield-check" style="width:14px"></i>การชำระเงินปลอดภัย เก็บประวัติอัตโนมัติ</div>'+
+    '<button class="btn btn-primary btn-block mt4" onclick="pay()">ฉันชำระเงินแล้ว</button>'+
+    '<div class="muted center-text" style="font-size:.72rem;margin-top:.4rem">(โหมดเดโม่: กดเพื่อจำลองการชำระเงินสำเร็จ)</div>';
+  icons();
+}
+async function pay(){
+  const d = await API.post("/payments/"+BID+"/confirm");
+  if(d.ok) go("/confirm/"+BID);
+}
+load();
+</script>{% endblock %}

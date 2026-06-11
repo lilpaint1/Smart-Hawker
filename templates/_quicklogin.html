@@ -1,0 +1,30 @@
+{# ปุ่ม Quick Login (prototype) — ไม่ต้อง OTP #}
+{% if enable_quick_login %}
+<div class="dashed mt2" style="padding:1rem">
+  <div class="row gap1" style="margin-bottom:.2rem">
+    <i data-lucide="zap" style="color:var(--warn);width:18px;height:18px"></i>
+    <b class="small">โหมดทดลอง (Prototype)</b>
+  </div>
+  <div class="muted small mb2">เข้าใช้งานไวไม่ต้อง OTP — ตั้งชื่อแล้วเลือกบทบาท</div>
+  <input id="ql-name" class="input mb2" placeholder="ตั้งชื่อ (เช่น ร้านเจ๊หมวย)" maxlength="40">
+  <div class="row gap2">
+    <button class="btn btn-ghost flex1" style="flex-direction:column;height:auto;padding:.8rem;gap:.25rem" onclick="quickLogin('SELLER')">
+      <i data-lucide="store" style="color:#3b5bf6"></i>
+      <span class="small">คนหาซื้อล็อค</span>
+      <span class="muted" style="font-size:.7rem;font-weight:400">พ่อค้าแม่ค้า</span>
+    </button>
+    <button class="btn btn-ghost flex1" style="flex-direction:column;height:auto;padding:.8rem;gap:.25rem" onclick="quickLogin('MARKET_OWNER')">
+      <i data-lucide="building-2" style="color:#12b886"></i>
+      <span class="small">คนขายล็อค</span>
+      <span class="muted" style="font-size:.7rem;font-weight:400">เจ้าของตลาด</span>
+    </button>
+  </div>
+</div>
+<script>
+  async function quickLogin(role) {
+    const name = ($("#ql-name").value || "").trim() || "ผู้ทดลอง";
+    const d = await API.post("/auth/quick", { name, role });
+    if (d.ok) go(role === "MARKET_OWNER" ? "/owner" : "/search");
+  }
+</script>
+{% endif %}

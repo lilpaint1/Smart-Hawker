@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}แชท{% endblock %}
+{% block body %}
+{% with title='แชท' %}{% include "_appheader.html" %}{% endwith %}
+<div class="px" id="list"></div>
+{% with active='chat' %}{% include "_bottomnav.html" %}{% endwith %}
+{% endblock %}
+{% block script %}<script>
+async function load(){
+  const d=await API.get("/messages");
+  const list=$("#list"); list.className="px stagger";
+  if(!d.threads || !d.threads.length){
+    list.innerHTML='<div class="card pad center-text mt2"><i data-lucide="message-circle" class="muted"></i>'+
+      '<div class="muted mt1">ยังไม่มีบทสนทนา</div><div class="muted small mt1">เริ่มแชทได้จากหน้ารายละเอียดตลาด</div></div>';
+    icons(); return;
+  }
+  list.innerHTML=d.threads.map(t=>
+    '<a class="card card-press pad row gap3 mt2" href="/chat/'+t.otherId+'">'+
+      '<div class="avatar" style="width:44px;height:44px;background:var(--brand)">'+esc((t.otherName||"?").charAt(0))+'</div>'+
+      '<div class="flex1"><div class="bold truncate">'+esc(t.otherName)+'</div>'+
+      '<div class="muted sub truncate">'+esc(t.lastBody)+'</div></div></a>').join("");
+  icons();
+}
+load();
+</script>{% endblock %}

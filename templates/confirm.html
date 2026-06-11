@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}จองสำเร็จ{% endblock %}
+{% block body %}
+<main class="px col center-text" style="min-height:100dvh;align-items:center;justify-content:center" id="content">
+  <div class="center pop" style="width:96px;height:96px;border-radius:50%;background:#ecfdf5">
+    <i data-lucide="check-circle-2" style="width:56px;height:56px;color:var(--accent)"></i>
+  </div>
+  <div class="h2 mt3">จองสำเร็จ! 🎉</div>
+  <div class="muted mt1">ระบบยืนยันการจองและรับมัดจำเรียบร้อยแล้ว</div>
+  <div id="detail" class="card pad mt4" style="width:100%;text-align:left"></div>
+  <div class="col gap2 mt4" style="width:100%">
+    <button class="btn btn-primary btn-block" onclick="go('/bookings')">ดูการจองของฉัน</button>
+    <button class="btn btn-ghost btn-block" onclick="go('/search')">กลับไปค้นหาต่อ</button>
+  </div>
+</main>
+{% endblock %}
+{% block script %}<script>
+const BID="{{ booking_id }}";
+function row(k,v,hl){ return '<div class="between" style="padding:.35rem 0;'+(hl?'font-weight:700;color:var(--accent-ink)':'')+'"><span class="muted">'+k+'</span><span>'+v+'</span></div>'; }
+async function load(){
+  const d=await API.get("/bookings/"+BID);
+  if(!d.ok) return;
+  const b=d.booking;
+  $("#detail").innerHTML = row("ตลาด",esc(b.marketName))+row("ล็อก",esc(b.lotCode))+
+    row("วันที่",fmtDate(b.date))+row("มัดจำที่ชำระ","฿"+b.depositAmount,true);
+  icons();
+}
+load();
+</script>{% endblock %}
