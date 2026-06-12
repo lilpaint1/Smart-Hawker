@@ -13,7 +13,7 @@ if project not in sys.path:
 
 # 2) ตั้งค่า env (แก้ค่าตามต้องการ — อย่างน้อยเปลี่ยน SECRET_KEY ให้ยาวๆ สุ่มๆ)
 os.environ["SECRET_KEY"] = "เปลี่ยนเป็นข้อความสุ่มยาวๆ-abc123xyz789"
-os.environ["ADMIN_CODE"] = "ake112233"
+os.environ["ADMIN_CODE"] = 
 os.environ["SMS_PROVIDER"] = "console"
 os.environ["ENABLE_QUICK_LOGIN"] = "1"
 os.environ["PROMPTPAY_ID"] = "0812345678"
